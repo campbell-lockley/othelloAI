@@ -9,23 +9,24 @@
 /* ******** *
  * Includes *
  * ******** */
+#include <stdlib.h>
 
+#include "minmaxsearch.h"
 
 /* ******* *
  * Defines *
  * ******* */
 
-/* ********** *
- * Prototypes *
- * ********** */
-
-
-/* ******* *
- * Globals *
- * ******* */
-
-
 /* ********* *
  * Functions *
  * ********* */
+char *minmax_decision(STATE *state) {
+	return NULL;
+}
 
+int max_value(STATE *state) {
+	return 0;
+}
+int min_value(STATE *state) {
+	return 0;
+}

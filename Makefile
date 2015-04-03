@@ -1,5 +1,5 @@
 all:
-	gcc -Wall -g -o othelloAI othelloAI.c
+	gcc -Wall -g -o othelloAI *.c
 
 clean:
 	rm othelloAI

@@ -27,6 +27,24 @@ char *minmax_decision(STATE *state) {
 int max_value(STATE *state) {
 	return 0;
 }
+
 int min_value(STATE *state) {
 	return 0;
+}
+
+char *minmaxsearch_start(MMSearch *search, STATE *state) {
+	return "minmaxsearch not working yet";
+}
+
+MMSearch *minmaxsearch_init(int time, int (*utility)(STATE *state), bool (*terminal_test)(STATE *state),
+			     Filo *(*successors)(STATE *state)) {
+	MMSearch *search;
+	
+	search = (MMSearch *)calloc(1, sizeof(MMSearch));
+	search->time = time;
+	search->utility = utility;
+	search->terminal_test = terminal_test;
+	search->successors = successors;
+	
+	return search;
 }

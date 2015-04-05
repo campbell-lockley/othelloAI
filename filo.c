@@ -1,6 +1,6 @@
 /* ****************************************************************************************************************** *
  * Name:	filo.c
- * Description:	A simple FILO implemented as a linked list.
+ * Description:	A simple First In Last Out linked list.
  * Author:	Campbell Lockley		studentID: 1178618
  * Date:	02/04/15
  * ****************************************************************************************************************** */

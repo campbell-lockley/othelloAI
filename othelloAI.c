@@ -25,6 +25,7 @@
 #define BOARD_DIM	8
 #define BOARD_SIZE	(BOARD_DIM * BOARD_DIM)
 #define ICONV(x, y)	((y) * BOARD_DIM + (x))
+#define FLIP(c)		(((c) == WHITE) ? BLACK : WHITE)
 #define EMPTY		'.'
 #define BLACK		'B'
 #define WHITE		'O'
@@ -59,8 +60,14 @@ PRIVATE void   free_state    (State *a);
 PRIVATE State *move          (State *state, int x, int y);
 PRIVATE State *capture       (State *state, State *successor, int x, int y, int dx, int dy);
 PRIVATE void   init          (State *initial_state, int *time);
-PRIVATE void   print_board   (char * board);
+PRIVATE void   print_state   (State *state);
 PRIVATE State *state_copy    (State *state);
+
+/* ******* *
+ * Globals *
+ * ******* */
+PRIVATE int expand_count = 0;
+PRIVATE char axis_convert[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
 
 /* ********* *
  * Functions *
@@ -73,8 +80,8 @@ int main(int argc, char *argv[]) {
 	
 	/* Get initial state from stdin */
 	init(&initial_state, &time);
-	print_board(initial_state.board);
-	printf("%c %d\n", initial_state.colour, time);
+	print_state(&initial_state);
+	printf("%d\n", time);
 	
 	/* Test FILO */
 	/*char s1[] = "first";
@@ -90,14 +97,13 @@ int main(int argc, char *argv[]) {
 	
 	/* Test Problem Domain Functions */
 	/*printf("utility = %d\n", utility(&initial_state));
+	printf("terminal_test = %s\n", (terminal_test(&initial_state) ? "yes" : "no"));
 	Filo *slist;
 	State *state;
 	slist = successors(&initial_state);
 	while (!filo_isEmpty(&slist)) {
 		state = (State *)filo_pop(&slist);
-		print_board(state->board);
-		printf("terminal = %s\n", (terminal_test(state)) ? "true" : "false");
-		printf("utility = %d\n", utility(state));
+		print_state(state);
 	}*/
 	
 	/* Misc. Testing */
@@ -106,9 +112,10 @@ int main(int argc, char *argv[]) {
 	a = compute_move(&initial_state, time);
 	if (a == NULL) printf("compute_move == NULL\n");
 	else {
-		printf("Move: (x,y) = (%d,%d)\n", a->x, a->y);
-		print_board(a->state->board);
+		printf("Move: (%c,%d)\n", axis_convert[a->x], (a->y) + 1);
+		print_state(a->state);
 	}
+	printf("expand count = %d\n", expand_count);
 	
 	return 0;
 }
@@ -131,10 +138,13 @@ PRIVATE Filo *actions(State *state) {
 	Filo *action_list;
 	filo_init(&action_list);
 	
+	/*printf("%s\n", (state->colour == WHITE) ? "white" : "black");*/
+	
 	for (y = 0; y < BOARD_DIM; y++) {
 		for (x = 0; x < BOARD_DIM; x++) {
 			result = move(state, x, y);
 			if (result != NULL) {
+				/*printf("a:(%c,%d) ",axis_convert[x], y+1);*/
 				a = (Action *)calloc(1, sizeof(Action));
 				a->x = x;
 				a->y = y;
@@ -143,6 +153,7 @@ PRIVATE Filo *actions(State *state) {
 			}
 		}
 	}
+	/*printf("\n");*/
 	
 	return action_list;
 }
@@ -169,28 +180,28 @@ PRIVATE int utility(State *state) {
 
 PRIVATE bool terminal_test(State *state) {
 	State *opponent;
-	Filo *successor_list;
+	Filo *actions_list;
 	
 	/* Check if we have possible moves */
-	successor_list = successors(state);
-	if (!filo_isEmpty(&successor_list)) {
-		filo_destroy(&successor_list);
+	actions_list = actions(state);
+	if (!filo_isEmpty(&actions_list)) {
+		/*filo_destroy(&successor_list); <= will cause mem leak */
 		return false;
 	}
 	
-	filo_destroy(&successor_list);
+	/*filo_destroy(&successor_list); <= will cause mem leak */
 	opponent = state_copy(state);
 	if (state->colour == WHITE) opponent->colour = BLACK;
 	else opponent->colour = WHITE;
 	
 	/* Check if opponent has possible moves */
-	successor_list = successors(opponent);
-	if (!filo_isEmpty(&successor_list)) {
-		filo_destroy(&successor_list);
+	actions_list = actions(opponent);
+	if (!filo_isEmpty(&actions_list)) {
+		/*filo_destroy(&successor_list); <= will cause mem leak */
 		return false;
 	}
 	
-	filo_destroy(&successor_list);
+	/*filo_destroy(&successor_list); <= will cause mem leak */
 	return true;
 }
 
@@ -200,6 +211,7 @@ PRIVATE Filo *successors(State *state) {
 	Filo *successor_list;
 	filo_init(&successor_list);
 	
+	expand_count++;
 	for (y = 0; y < BOARD_DIM; y++) {
 		for (x = 0; x < BOARD_DIM; x++) {
 			successor = move(state, x, y);
@@ -207,16 +219,23 @@ PRIVATE Filo *successors(State *state) {
 		}
 	}
 	
+	/* If no move possible, pass */
+	if (filo_isEmpty(&successor_list)) {
+		successor = state_copy(state);
+		successor->colour = FLIP(successor->colour);
+		filo_push(&successor_list, successor);
+	}
+	
 	return successor_list;
 }
 
 PRIVATE void free_action(Action *a) {
-	free(a->state);
-	free(a);
+	/*free(a->state);
+	free(a);*/
 }
 
 PRIVATE void free_state(State *state) {
-	free(state);
+	/*free(state);*/
 }
 
 PRIVATE State *move(State *state, int x, int y) {
@@ -256,8 +275,11 @@ PRIVATE State *move(State *state, int x, int y) {
 		successor = capture(state, successor, x, y, +1, +1);
 	}
 	
-	/* If valid move found, place piece */
-	if (successor != NULL) successor->board[ICONV(x, y)] = state->colour;
+	/* If valid move found, place piece and update colour to enemy */
+	if (successor != NULL) {
+		successor->board[ICONV(x, y)] = state->colour;
+		successor->colour = FLIP(state->colour);
+	}
 	
 	return successor;
 }
@@ -275,7 +297,7 @@ PRIVATE State *capture(State *state, State *successor, int x, int y, int dx, int
 	
 	/* Find flanking piece */
 	for (x_pos = x + dx, y_pos = y + dy;
-	     (x_pos >= 0) || (x_pos < BOARD_DIM) || (y_pos >= 0) || (y_pos < BOARD_DIM);
+	     (x_pos >= 0) && (x_pos < BOARD_DIM) && (y_pos >= 0) && (y_pos < BOARD_DIM);
 	     x_pos += dx, y_pos += dy) {
 	     
 		c = state->board[ICONV(x_pos, y_pos)];
@@ -296,6 +318,7 @@ PRIVATE State *capture(State *state, State *successor, int x, int y, int dx, int
 	if (successor == NULL) successor = state_copy(state);
 	
 	/* Flip flanked pieces */
+	/*printf("(x_pos,y_pos)=(%c,%d) (x_max,y_max)=(%c,%d) dx = %d, dy = %d\n", axis_convert[x+dx], y+dy+1, axis_convert[x_max], y_max+1, dx, dy);*/
 	for (x_pos = x + dx, y_pos = y + dy; (x_pos != x_max) || (y_pos != y_max); x_pos += dx, y_pos += dy) {
 		successor->board[ICONV(x_pos, y_pos)] = state->colour;
 	}
@@ -338,15 +361,16 @@ PRIVATE void init(State *initial_state, int *time) {
 	return;
 }
 
-PRIVATE void print_board(char *board) {
+PRIVATE void print_state(State *state) {
 	int x, y, index;
 	
 	printf("- abcdefgh\n");
 	for (y = 0, index = 0; y < BOARD_DIM; y++) {
 		printf("%d ", y+1);
-		for (x = 0; x < BOARD_DIM; x++, index++) printf("%c", board[index]);
+		for (x = 0; x < BOARD_DIM; x++, index++) printf("%c", state->board[index]);
 		printf("\n");
 	}
+	printf("%c\n", state->colour);
 }
 
 PRIVATE State *state_copy(State *state) {

@@ -18,6 +18,8 @@
 /* ******* *
  * Defines *
  * ******* */
+#define MAX(x,y) ((x) > (y) ? (x) : (y))
+#define MIN(x,y) ((x) < (y) ? (x) : (y))
  
 /* ******* *
  * Globals *
@@ -72,12 +74,13 @@ ACTION *minmax_decision(STATE *state) {
 	while (!filo_isEmpty(&actions)) {
 		a = filo_pop(&actions);
 		min = min_value(mmsearch_result(a, state));
+		/*printf("min_value = %d\n", min);*/
 		if (min > max) {
 			max = min;
-			mmsearch_free_action(best);
+			/*mmsearch_free_action(best);*/
 			best = a;
 		} else {
-			mmsearch_free_action(a);
+			/*mmsearch_free_action(a);*/
 		}
 	}
 	
@@ -95,8 +98,8 @@ int max_value(STATE *state) {
 	while (!filo_isEmpty(&successors)) {
 		successor = filo_pop(&successors);
 		min = min_value(successor);
-		if (min > v) v = min;
-		mmsearch_free_state(successor);
+		v = MAX(v, min);
+		/*mmsearch_free_state(successor);*/
 	}
 	
 	return v;
@@ -113,8 +116,9 @@ int min_value(STATE *state) {
 	while (!filo_isEmpty(&successors)) {
 		successor = filo_pop(&successors);
 		max = max_value(successor);
-		if (max < v) v = max;
-		mmsearch_free_state(successor);
+		/*printf("max_value = %d\n", max);*/
+		v = MIN(v, max);
+		/*mmsearch_free_state(successor);*/
 	}
 	
 	return v;

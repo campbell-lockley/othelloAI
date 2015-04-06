@@ -77,10 +77,10 @@ ACTION *minmax_decision(STATE *state) {
 		/*printf("min_value = %d\n", min);*/
 		if (min > max) {
 			max = min;
-			/*mmsearch_free_action(best);*/
+			if (best != NULL) mmsearch_free_action(best);
 			best = a;
 		} else {
-			/*mmsearch_free_action(a);*/
+			mmsearch_free_action(a);
 		}
 	}
 	
@@ -99,7 +99,7 @@ int max_value(STATE *state) {
 		successor = filo_pop(&successors);
 		min = min_value(successor);
 		v = MAX(v, min);
-		/*mmsearch_free_state(successor);*/
+		mmsearch_free_state(successor);
 	}
 	
 	return v;
@@ -118,7 +118,7 @@ int min_value(STATE *state) {
 		max = max_value(successor);
 		/*printf("max_value = %d\n", max);*/
 		v = MIN(v, max);
-		/*mmsearch_free_state(successor);*/
+		mmsearch_free_state(successor);
 	}
 	
 	return v;

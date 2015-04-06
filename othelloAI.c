@@ -62,6 +62,7 @@ PRIVATE State *capture       (State *state, State *successor, int x, int y, int 
 PRIVATE void   init          (State *initial_state, int *time);
 PRIVATE void   print_state   (State *state);
 PRIVATE State *state_copy    (State *state);
+PRIVATE void   free_actions  (Filo *actions_list);
 
 /* ******* *
  * Globals *
@@ -116,6 +117,7 @@ int main(int argc, char *argv[]) {
 		print_state(a->state);
 	}
 	printf("expand count = %d\n", expand_count);
+	free_action(a);
 	
 	return 0;
 }
@@ -185,11 +187,11 @@ PRIVATE bool terminal_test(State *state) {
 	/* Check if we have possible moves */
 	actions_list = actions(state);
 	if (!filo_isEmpty(&actions_list)) {
-		/*filo_destroy(&successor_list); <= will cause mem leak */
+		free_actions(actions_list);
 		return false;
 	}
 	
-	/*filo_destroy(&successor_list); <= will cause mem leak */
+	free_actions(actions_list);
 	opponent = state_copy(state);
 	if (state->colour == WHITE) opponent->colour = BLACK;
 	else opponent->colour = WHITE;
@@ -197,11 +199,13 @@ PRIVATE bool terminal_test(State *state) {
 	/* Check if opponent has possible moves */
 	actions_list = actions(opponent);
 	if (!filo_isEmpty(&actions_list)) {
-		/*filo_destroy(&successor_list); <= will cause mem leak */
+		free_actions(actions_list);
+		free_state(opponent);
 		return false;
 	}
 	
-	/*filo_destroy(&successor_list); <= will cause mem leak */
+	free_actions(actions_list);
+	free_state(opponent);
 	return true;
 }
 
@@ -230,12 +234,12 @@ PRIVATE Filo *successors(State *state) {
 }
 
 PRIVATE void free_action(Action *a) {
-	/*free(a->state);
-	free(a);*/
+	free(a->state);
+	free(a);
 }
 
 PRIVATE void free_state(State *state) {
-	/*free(state);*/
+	free(state);
 }
 
 PRIVATE State *move(State *state, int x, int y) {
@@ -382,4 +386,13 @@ PRIVATE State *state_copy(State *state) {
 	copy->colour = state->colour;
 	
 	return copy;
+}
+
+PRIVATE void free_actions(Filo *actions_list) {
+	Action *a;
+	
+	while (!filo_isEmpty(&actions_list)) {
+		a = filo_pop(&actions_list);
+		free_action(a);
+	}
 }

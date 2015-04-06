@@ -18,28 +18,35 @@
 /* ******* *
  * Defines *
  * ******* */
-#define STATE void
+#define STATE	void
+#define ACTION	void
 
 /* ******** *
  * Typedefs *
  * ******** */
-typedef struct MMSearch {
+/*typedef struct MMSearch {
 	int time;
+	Filo *(*actions)(STATE *state);
+	STATE *(*result)(ACTION *a, STATE *state);
 	int (*utility)(STATE *state);
 	bool (*terminal_test)(STATE *state);
 	Filo *(*successors)(STATE *state);
-} MMSearch;
+} MMSearch;*/
 
 /* ********** *
  * Prototypes *
  * ********** */
-extern char     *minmax_decision    (STATE *state);
+extern ACTION   *minmax_decision    (STATE *state);
 extern int       max_value          (STATE *state);
 extern int       min_value          (STATE *state);
-extern char     *minmaxsearch_start (MMSearch *search, STATE *state);
-extern MMSearch *minmaxsearch_init  (int time,
+/*extern char     *minmaxsearch_start (MMSearch *search, STATE *state);*/
+extern void minmaxsearch_init  (int runtime,
+				     Filo *(*actions)(STATE *state),
+				     STATE *(*result)(ACTION *a, STATE *state),
 				     int (*utility)(STATE *state),
 				     bool (*terminal_test)(STATE *state),
-				     Filo *(*successors)(STATE *state));
+				     Filo *(*successors)(STATE *state),
+				     void(*free_action)(ACTION *a),
+				     void(*free_state)(STATE *state));
 
 #endif

@@ -37,19 +37,30 @@ typedef struct State {
 	char board[BOARD_SIZE];
 } State;
 
+typedef struct Action {
+	int x;
+	int y;
+	State *state;
+} Action;
+
 /* ********** *
  * Prototypes *
  * ********** */
-PUBLIC char *compute_move  (State *state, int time);
-PUBLIC int   utility       (State *state);
-PUBLIC bool  terminal_test (State *state);
-PUBLIC Filo *successors    (State *state);
+PUBLIC Action *compute_move  (State *state, int time);
 
-PRIVATE State *move        (State *state, int x, int y);
-PRIVATE State *capture     (State *state, State *successor, int x, int y, int dx, int dy);
-PRIVATE void   init        (State *initial_state, int *time);
-PRIVATE void   print_board (char * board);
-PRIVATE State *state_copy  (State *state);
+PRIVATE Filo  *actions       (State *state);
+PRIVATE State *result        (Action *a, State *state);
+PRIVATE int    utility       (State *state);
+PRIVATE bool   terminal_test (State *state);
+PRIVATE Filo  *successors    (State *state);
+PRIVATE void   free_action   (Action *a);
+PRIVATE void   free_state    (State *a);
+
+PRIVATE State *move          (State *state, int x, int y);
+PRIVATE State *capture       (State *state, State *successor, int x, int y, int dx, int dy);
+PRIVATE void   init          (State *initial_state, int *time);
+PRIVATE void   print_board   (char * board);
+PRIVATE State *state_copy    (State *state);
 
 /* ********* *
  * Functions *
@@ -57,7 +68,7 @@ PRIVATE State *state_copy  (State *state);
 int main(int argc, char *argv[]) {
 	State initial_state;						/* Initial state read from stdin	      */
 	int time;							/* Time limit for algorithm		      */
-	char *result;
+	Action *a = NULL;
 	printf("Hello World from othello AI\n");
 	
 	/* Get initial state from stdin */
@@ -78,7 +89,7 @@ int main(int argc, char *argv[]) {
 	printf("filo is %sempty\n", (filo_isEmpty(&filo) ? "" : "not "));*/
 	
 	/* Test Problem Domain Functions */
-	printf("utility = %d\n", utility(&initial_state));
+	/*printf("utility = %d\n", utility(&initial_state));
 	Filo *slist;
 	State *state;
 	slist = successors(&initial_state);
@@ -87,20 +98,60 @@ int main(int argc, char *argv[]) {
 		print_board(state->board);
 		printf("terminal = %s\n", (terminal_test(state)) ? "true" : "false");
 		printf("utility = %d\n", utility(state));
-	}
+	}*/
+	
+	/* Misc. Testing */
 	
 	/* Compute next move */
-	result = compute_move(&initial_state, time);
-	printf("%s\n", result);
+	a = compute_move(&initial_state, time);
+	if (a == NULL) printf("compute_move == NULL\n");
+	else {
+		printf("Move: (x,y) = (%d,%d)\n", a->x, a->y);
+		print_board(a->state->board);
+	}
 	
 	return 0;
 }
 
-PUBLIC char *compute_move(State *state, int time) {
-	return "No move yet";
+PUBLIC Action *compute_move(State *state, int time) {
+	minmaxsearch_init(time, (Filo *(*)(void *))actions, 
+	                  (void *(*)(void *, void *))result, 
+	                  (int(*)(void *))utility, 
+	                  (bool(*)(void *))terminal_test, 
+	                  (Filo *(*)(void *))successors,
+	                  (void(*)(void *))free_action,
+	                  (void(*)(void *))free_state);
+	return minmax_decision(state);
 }
 
-PUBLIC int utility(State *state) {
+PRIVATE Filo *actions(State *state) {
+	int x, y;
+	Action *a;
+	State *result;
+	Filo *action_list;
+	filo_init(&action_list);
+	
+	for (y = 0; y < BOARD_DIM; y++) {
+		for (x = 0; x < BOARD_DIM; x++) {
+			result = move(state, x, y);
+			if (result != NULL) {
+				a = (Action *)calloc(1, sizeof(Action));
+				a->x = x;
+				a->y = y;
+				a->state = result;
+				filo_push(&action_list, a);
+			}
+		}
+	}
+	
+	return action_list;
+}
+
+PRIVATE State *result(Action *a, State *state) {
+	return a->state;
+}
+
+PRIVATE int utility(State *state) {
 	int i, white = 0, black = 0;
 	
 	for (i = 0; i < BOARD_SIZE; i++) {
@@ -116,7 +167,7 @@ PUBLIC int utility(State *state) {
 	return (state->colour == WHITE) ? (white - black) : (black - white);
 }
 
-PUBLIC bool terminal_test(State *state) {
+PRIVATE bool terminal_test(State *state) {
 	State *opponent;
 	Filo *successor_list;
 	
@@ -143,7 +194,7 @@ PUBLIC bool terminal_test(State *state) {
 	return true;
 }
 
-PUBLIC Filo *successors(State *state) {
+PRIVATE Filo *successors(State *state) {
 	int x, y;
 	State *successor;
 	Filo *successor_list;
@@ -157,6 +208,15 @@ PUBLIC Filo *successors(State *state) {
 	}
 	
 	return successor_list;
+}
+
+PRIVATE void free_action(Action *a) {
+	free(a->state);
+	free(a);
+}
+
+PRIVATE void free_state(State *state) {
+	free(state);
 }
 
 PRIVATE State *move(State *state, int x, int y) {

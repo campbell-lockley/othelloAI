@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "othelloAI.h"
 #include "filo.h"
 #include "minmaxsearch.h"
 
@@ -22,27 +23,8 @@
  * ******* */
 #define PRIVATE		static
 #define PUBLIC
-#define BOARD_DIM	8
-#define BOARD_SIZE	(BOARD_DIM * BOARD_DIM)
 #define ICONV(x, y)	((y) * BOARD_DIM + (x))
 #define FLIP(c)		(((c) == WHITE) ? BLACK : WHITE)
-#define EMPTY		'.'
-#define BLACK		'B'
-#define WHITE		'O'
-
-/* ******** *
- * Typedefs *
- * ******** */
-typedef struct State {
-	char colour;
-	char board[BOARD_SIZE];
-} State;
-
-typedef struct Action {
-	int x;
-	int y;
-	State *state;
-} Action;
 
 /* ********** *
  * Prototypes *
@@ -111,13 +93,13 @@ int main(int argc, char *argv[]) {
 	
 	/* Compute next move */
 	a = compute_move(&initial_state, time);
-	if (a == NULL) printf("compute_move == NULL\n");
+	if (a == NULL) printf("Move: no move found\n");
 	else {
 		printf("Move: (%c,%d)\n", axis_convert[a->x], (a->y) + 1);
 		print_state(a->state);
 	}
 	printf("expand count = %d\n", expand_count);
-	free_action(a);
+	if (a != NULL) free_action(a);
 	
 	return 0;
 }

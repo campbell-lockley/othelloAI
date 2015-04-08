@@ -29,6 +29,7 @@ typedef struct Action {						/* othelloAI's definition of an action		      */
 	int x;
 	int y;
 	State *state;
+	int estimate;
 } Action;
 
 /* ********** *

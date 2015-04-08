@@ -38,6 +38,7 @@ PRIVATE State *result        (Action *a, State *state);
 PRIVATE int    utility       (State *state);
 PRIVATE bool   terminal_test (State *state);
 PRIVATE Filo  *successors    (State *state);
+PRIVATE void   set_estimate  (Action *a, int estimate);
 PRIVATE void   free_action   (Action *a);
 PRIVATE void   free_state    (State *a);
 
@@ -65,12 +66,11 @@ int main(int argc, char *argv[]) {
 	State initial_state;						/* Initial state read from stdin	      */
 	int time;							/* Time limit for algorithm		      */
 	Action *a = NULL;
-	printf("Hello World from othello AI\n");
 	
 	/* Get initial state from stdin */
 	if(!scan_state(&initial_state, &time)) return 1;
-	print_state(&initial_state);
-	printf("%d\n", time);
+	/*print_state(&initial_state);
+	printf("%d\n", time);*/
 	
 	/* Test FILO */
 	/*char s1[] = "first";
@@ -98,14 +98,13 @@ int main(int argc, char *argv[]) {
 	/* Misc. Testing */
 	
 	/* Compute next move */
+	//a = compute_move(&initial_state, time);
 	a = compute_move(&initial_state, time);
-	if (a == NULL) printf("Move: no move found\n");
-	else {
-		printf("Move: (%c,%d)\n", axis_convert[a->x], (a->y) + 1);
-		print_state(a->state);
-	}
-	printf("expand count = %d\n", expand_count);
-	if (a != NULL) free_action(a);
+	if (a != NULL) {
+		printf("move %c %d nodes %d depth %d minmax %d\n", 
+		       axis_convert[a->x], (a->y) + 1, expand_count, minmax_get_depth(), a->estimate);
+		free_action(a);
+	} else printf("move a -1 nodes 0 depth 0 minmax 0\n");
 	
 	return 0;
 }
@@ -119,6 +118,7 @@ PUBLIC Action *compute_move(State *state, int time) {
 	                  (int(*)(void *))utility, 
 	                  (bool(*)(void *))terminal_test, 
 	                  (Filo *(*)(void *))successors,
+	                  (void(*)(void *, int))set_estimate,
 	                  (void(*)(void *))free_action,
 	                  (void(*)(void *))free_state);
 	return minmax_decision(state);
@@ -239,6 +239,13 @@ PRIVATE Filo *successors(State *state) {
 	}
 	
 	return successor_list;
+}
+
+/*
+ * Updates minmax estimate of an action.
+ */
+PRIVATE void set_estimate(Action *a, int estimate) {
+	if (a != NULL) a->estimate = estimate;
 }
 
 /*

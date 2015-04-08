@@ -25,13 +25,15 @@
  * Prototypes *
  * ********** */
 extern ACTION *minmax_decision   (STATE *state);			/* Start a minmax search. Returns best action */
-extern void    minmaxsearch_init (int runtime,				/* Sets required values for minmaxsearch      */
+extern void    minmaxsearch_init (int time,				/* Sets required values for minmaxsearch      */
 				  Filo *(*actions)(STATE *state),
 				  STATE *(*result)(ACTION *a, STATE *state),
 				  int (*utility)(STATE *state),
 				  bool (*terminal_test)(STATE *state),
 				  Filo *(*successors)(STATE *state),
+				  void(*set_estimate)(ACTION *a, int estimate),
 				  void(*free_action)(ACTION *a),
 				  void(*free_state)(STATE *state));
+extern int     minmax_get_depth  (void);				/* Returns the last maximum depth reached     */
 
 #endif

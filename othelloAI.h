@@ -20,12 +20,12 @@
 /* ******** *
  * Typedefs *
  * ******** */
-typedef struct State {
+typedef struct State {						/* othelloAI's definition of a state		      */
 	char colour;
 	char board[BOARD_SIZE];
 } State;
 
-typedef struct Action {
+typedef struct Action {						/* othelloAI's definition of an action		      */
 	int x;
 	int y;
 	State *state;
@@ -34,6 +34,6 @@ typedef struct Action {
 /* ********** *
  * Prototypes *
  * ********** */
-extern Action *compute_move(State *state, int time);
+extern Action *compute_move(State *state, int time);		/* Runs othelloAI to comute best next move	      */
 
 #endif

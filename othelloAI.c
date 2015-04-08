@@ -23,14 +23,16 @@
  * ******* */
 #define PRIVATE		static
 #define PUBLIC
-#define ICONV(x, y)	((y) * BOARD_DIM + (x))
+#define ICONV(x, y)	((y) * BOARD_DIM + (x))				/* Convert (x,y) to 1d array index	      */
 #define FLIP(c)		(((c) == WHITE) ? BLACK : WHITE)
 
 /* ********** *
  * Prototypes *
  * ********** */
+/* Runs othelloAI to compute best next move									      */
 PUBLIC Action *compute_move  (State *state, int time);
 
+/* These are othello specific implementatons of the problem domain functions required by minmaxsearch		      */
 PRIVATE Filo  *actions       (State *state);
 PRIVATE State *result        (Action *a, State *state);
 PRIVATE int    utility       (State *state);
@@ -39,9 +41,10 @@ PRIVATE Filo  *successors    (State *state);
 PRIVATE void   free_action   (Action *a);
 PRIVATE void   free_state    (State *a);
 
+/* Utility functions for othelloAI										      */
 PRIVATE State *move          (State *state, int x, int y);
 PRIVATE State *capture       (State *state, State *successor, int x, int y, int dx, int dy);
-PRIVATE void   init          (State *initial_state, int *time);
+PRIVATE bool   scan_state    (State *state, int *time);
 PRIVATE void   print_state   (State *state);
 PRIVATE State *state_copy    (State *state);
 PRIVATE void   free_actions  (Filo *actions_list);
@@ -55,6 +58,9 @@ PRIVATE char axis_convert[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
 /* ********* *
  * Functions *
  * ********* */
+/*
+ * Reads a board state from stdin and computes a next move.
+ */
 int main(int argc, char *argv[]) {
 	State initial_state;						/* Initial state read from stdin	      */
 	int time;							/* Time limit for algorithm		      */
@@ -62,7 +68,7 @@ int main(int argc, char *argv[]) {
 	printf("Hello World from othello AI\n");
 	
 	/* Get initial state from stdin */
-	init(&initial_state, &time);
+	if(!scan_state(&initial_state, &time)) return 1;
 	print_state(&initial_state);
 	printf("%d\n", time);
 	
@@ -104,17 +110,23 @@ int main(int argc, char *argv[]) {
 	return 0;
 }
 
+/*
+ * Runs othelloAI to compute best next move.
+ */
 PUBLIC Action *compute_move(State *state, int time) {
-	minmaxsearch_init(time, (Filo *(*)(void *))actions, 
+	minmaxsearch_init(time, (Filo *(*)(void *))actions, 		/* Must first init minmaxsearch		      */
 	                  (void *(*)(void *, void *))result, 
 	                  (int(*)(void *))utility, 
 	                  (bool(*)(void *))terminal_test, 
 	                  (Filo *(*)(void *))successors,
 	                  (void(*)(void *))free_action,
 	                  (void(*)(void *))free_state);
-	return minmax_decision(state);
+	return minmax_decision(state);					/* Return result of minmax_decision	      */
 }
 
+/*
+ *
+ */
 PRIVATE Filo *actions(State *state) {
 	int x, y;
 	Action *a;
@@ -142,10 +154,16 @@ PRIVATE Filo *actions(State *state) {
 	return action_list;
 }
 
+/*
+ *
+ */
 PRIVATE State *result(Action *a, State *state) {
 	return a->state;
 }
 
+/*
+ *
+ */
 PRIVATE int utility(State *state) {
 	int i, white = 0, black = 0;
 	
@@ -162,6 +180,9 @@ PRIVATE int utility(State *state) {
 	return (state->colour == WHITE) ? (white - black) : (black - white);
 }
 
+/*
+ *
+ */
 PRIVATE bool terminal_test(State *state) {
 	State *opponent;
 	Filo *actions_list;
@@ -191,6 +212,9 @@ PRIVATE bool terminal_test(State *state) {
 	return true;
 }
 
+/*
+ *
+ */
 PRIVATE Filo *successors(State *state) {
 	int x, y;
 	State *successor;
@@ -215,15 +239,24 @@ PRIVATE Filo *successors(State *state) {
 	return successor_list;
 }
 
+/*
+ *
+ */
 PRIVATE void free_action(Action *a) {
 	free(a->state);
 	free(a);
 }
 
+/*
+ *
+ */
 PRIVATE void free_state(State *state) {
 	free(state);
 }
 
+/*
+ * Checks if (x,y) is a possible move, returning the resulting state if it is a move.
+ */
 PRIVATE State *move(State *state, int x, int y) {
 	bool left = false, right = false, up = false, down = false;
 	State *successor = NULL;
@@ -261,7 +294,7 @@ PRIVATE State *move(State *state, int x, int y) {
 		successor = capture(state, successor, x, y, +1, +1);
 	}
 	
-	/* If valid move found, place piece and update colour to enemy */
+	/* If valid move found, place piece and update colour to enemy's' */
 	if (successor != NULL) {
 		successor->board[ICONV(x, y)] = state->colour;
 		successor->colour = FLIP(state->colour);
@@ -270,6 +303,9 @@ PRIVATE State *move(State *state, int x, int y) {
 	return successor;
 }
 
+/*
+ * Checks in a single direction for pieces which can be captured and captures any capturable pieces.
+ */
 PRIVATE State *capture(State *state, State *successor, int x, int y, int dx, int dy) {
 	int x_pos, y_pos, x_max = x, y_max = y;
 	char enemy, c;
@@ -304,7 +340,6 @@ PRIVATE State *capture(State *state, State *successor, int x, int y, int dx, int
 	if (successor == NULL) successor = state_copy(state);
 	
 	/* Flip flanked pieces */
-	/*printf("(x_pos,y_pos)=(%c,%d) (x_max,y_max)=(%c,%d) dx = %d, dy = %d\n", axis_convert[x+dx], y+dy+1, axis_convert[x_max], y_max+1, dx, dy);*/
 	for (x_pos = x + dx, y_pos = y + dy; (x_pos != x_max) || (y_pos != y_max); x_pos += dx, y_pos += dy) {
 		successor->board[ICONV(x_pos, y_pos)] = state->colour;
 	}
@@ -312,8 +347,12 @@ PRIVATE State *capture(State *state, State *successor, int x, int y, int dx, int
 	return successor;
 }
 
-PRIVATE void init(State *initial_state, int *time) {
-	int i, j, index, ign, error = 0;
+/*
+ * Attempts to read a state from stdin.
+ */
+PRIVATE bool scan_state(State *state, int *time) {
+	int i, j, index, ign;
+	bool success = true;
 	char c;
 	
 	/* Board shoud be of the form:
@@ -328,25 +367,25 @@ PRIVATE void init(State *initial_state, int *time) {
 		8 ........
 		B 60			*/
 
-	if (scanf("- abcdefgh\n") == EOF) error = 1;
+	if (scanf("- abcdefgh\n") == EOF) success = false;
 	for (i = 0, index = 0; i < BOARD_DIM; i++) {
-		if (scanf("%d ", &ign) == EOF) error = 1;
+		if (scanf("%d ", &ign) == EOF) success = false;
 		for (j = 0; j < BOARD_DIM; j++, index++) {
-			if (scanf("%c", &c) == EOF) error = 1;
-			initial_state->board[index] = c;
+			if (scanf("%c", &c) == EOF) success = false;
+			state->board[index] = c;
 		}
 		scanf("\n");
 	}
-	if (scanf(" %c %d\n", &(initial_state->colour), time) == EOF) error = 1;
+	if (scanf(" %c %d\n", &(state->colour), time) == EOF) success = false;
 	
-	if (error) {
-		printf("Error: incomplete board\n");
-		exit(1);
-	}
+	if (!success) printf("Error: incomplete board\n");
 	
-	return;
+	return success;
 }
 
+/*
+ * Prints a state to stdout.
+ */
 PRIVATE void print_state(State *state) {
 	int x, y, index;
 	
@@ -359,6 +398,9 @@ PRIVATE void print_state(State *state) {
 	printf("%c\n", state->colour);
 }
 
+/*
+ * Returns a copy of a state.
+ */
 PRIVATE State *state_copy(State *state) {
 	int i;
 	State *copy;
@@ -370,6 +412,9 @@ PRIVATE State *state_copy(State *state) {
 	return copy;
 }
 
+/*
+ * Safely frees a Filo<Action>.
+ */
 PRIVATE void free_actions(Filo *actions_list) {
 	Action *a;
 	

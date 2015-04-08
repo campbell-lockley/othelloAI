@@ -34,13 +34,13 @@ bool ready = false;							/* True if minmaxsearch_init run correctly    */
 int  time;								/* Time constraint on minmaxsearch	      */
 
 /* These are the problem domain functions required by minmaxsearch */
-Filo  *(*mmsearch_actions)       (STATE *state)            = NULL;
-STATE *(*mmsearch_result)        (ACTION *a, STATE *state) = NULL;
-int    (*mmsearch_utility)       (STATE *state)            = NULL;
-bool   (*mmsearch_terminal_test) (STATE *state)            = NULL;
-Filo  *(*mmsearch_successors)    (STATE *state)            = NULL;
-void   (*mmsearch_free_action)   (ACTION *a)               = NULL;
-void   (*mmsearch_free_state)    (STATE *a)                = NULL;
+Filo  *(*mmsearch_actions)       (STATE *state)            = NULL;	/* Finds possible actions for a state	      */
+STATE *(*mmsearch_result)        (ACTION *a, STATE *state) = NULL;	/* Returns result of an action on a state     */
+int    (*mmsearch_utility)       (STATE *state)            = NULL;	/* Returns utility value for a state	      */
+bool   (*mmsearch_terminal_test) (STATE *state)            = NULL;	/* Tests for a terminal state		      */
+Filo  *(*mmsearch_successors)    (STATE *state)            = NULL;	/* Expands a state			      */
+void   (*mmsearch_free_action)   (ACTION *a)               = NULL;	/* Safely frees an action		      */
+void   (*mmsearch_free_state)    (STATE *a)                = NULL;	/* Safely frees a state			      */
 
 /* ********* *
  * Functions *
@@ -54,7 +54,8 @@ void minmaxsearch_init(int runtime, Filo *(*actions)(STATE *state), STATE *(*res
 		       void(*free_state)(STATE *state)) {
 		       
 	/* Check for valid args */
-	if (runtime <= 0 || !actions || !result || !utility || !terminal_test || !successors || !free_action || !free_state) {
+	if (runtime <= 0 || !actions || !result || !utility || !terminal_test || !successors || !free_action 
+	    || !free_state) {
 		ready = false;
 		printf("%s\n", "minmaxsearch passed incompatable arguments");
 		return;

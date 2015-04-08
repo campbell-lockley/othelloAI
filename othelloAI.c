@@ -121,26 +121,25 @@ PUBLIC Action *compute_move(State *state, int time) {
 	                  (Filo *(*)(void *))successors,
 	                  (void(*)(void *))free_action,
 	                  (void(*)(void *))free_state);
-	return minmax_decision(state);					/* Return result of minmax_decision	      */
+	return minmax_decision(state);
 }
 
 /*
- *
+ * Finds possible actions for a state.
  */
 PRIVATE Filo *actions(State *state) {
 	int x, y;
 	Action *a;
 	State *result;
 	Filo *action_list;
+	
 	filo_init(&action_list);
 	
-	/*printf("%s\n", (state->colour == WHITE) ? "white" : "black");*/
-	
+	/* Check every board position for a possible move */
 	for (y = 0; y < BOARD_DIM; y++) {
 		for (x = 0; x < BOARD_DIM; x++) {
-			result = move(state, x, y);
+			result = move(state, x, y);			/* Pre-calculate the result of an action      */
 			if (result != NULL) {
-				/*printf("a:(%c,%d) ",axis_convert[x], y+1);*/
 				a = (Action *)calloc(1, sizeof(Action));
 				a->x = x;
 				a->y = y;
@@ -149,27 +148,28 @@ PRIVATE Filo *actions(State *state) {
 			}
 		}
 	}
-	/*printf("\n");*/
 	
 	return action_list;
 }
 
 /*
- *
+ * Returns result of an action on a state.
  */
 PRIVATE State *result(Action *a, State *state) {
-	return a->state;
+	return a->state;						/* Result has been pre-calculated	      */
 }
 
 /*
- *
+ * Returns utility value for a state.
  */
 PRIVATE int utility(State *state) {
 	int i, white = 0, black = 0;
+	char c;
 	
 	for (i = 0; i < BOARD_SIZE; i++) {
-		if (state->board[i] == WHITE) white++;
-		else if (state->board[i] == BLACK) black++;
+		c = state->board[i];
+		if (c == WHITE) white++;
+		else if (c == BLACK) black++;
 	}
 	
 	if (terminal_test(state)) {
@@ -181,7 +181,7 @@ PRIVATE int utility(State *state) {
 }
 
 /*
- *
+ * Tests for a terminal state.
  */
 PRIVATE bool terminal_test(State *state) {
 	State *opponent;
@@ -213,15 +213,17 @@ PRIVATE bool terminal_test(State *state) {
 }
 
 /*
- *
+ * Expands a state.
  */
 PRIVATE Filo *successors(State *state) {
 	int x, y;
 	State *successor;
 	Filo *successor_list;
-	filo_init(&successor_list);
 	
 	expand_count++;
+	filo_init(&successor_list);
+	
+	/* Check every board position for a possible move which will result in a new state */
 	for (y = 0; y < BOARD_DIM; y++) {
 		for (x = 0; x < BOARD_DIM; x++) {
 			successor = move(state, x, y);
@@ -240,7 +242,7 @@ PRIVATE Filo *successors(State *state) {
 }
 
 /*
- *
+ * Safely frees an action.
  */
 PRIVATE void free_action(Action *a) {
 	free(a->state);
@@ -248,7 +250,7 @@ PRIVATE void free_action(Action *a) {
 }
 
 /*
- *
+ * Safely frees a state.
  */
 PRIVATE void free_state(State *state) {
 	free(state);

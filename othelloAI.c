@@ -53,7 +53,8 @@ PRIVATE void   free_actions  (Filo *actions_list);
 /* ******* *
  * Globals *
  * ******* */
-PRIVATE int expand_count = 0;
+PRIVATE char ai_colour;
+PRIVATE int  expand_count = 0;
 PRIVATE char axis_convert[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
 
 /* ********* *
@@ -113,6 +114,7 @@ int main(int argc, char *argv[]) {
  * Runs othelloAI to compute best next move.
  */
 PUBLIC Action *compute_move(State *state, int time) {
+	ai_colour = state->colour;
 	minmaxsearch_init(time, (Filo *(*)(void *))actions, 		/* Must first init minmaxsearch		      */
 	                  (void *(*)(void *, void *))result, 
 	                  (int(*)(void *))utility, 
@@ -177,7 +179,7 @@ PRIVATE int utility(State *state) {
 		else if (black > white) black += 100;
 	}
 	
-	return (state->colour == WHITE) ? (white - black) : (black - white);
+	return (ai_colour == WHITE) ? (white - black) : (black - white);
 }
 
 /*

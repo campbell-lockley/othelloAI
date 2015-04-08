@@ -197,11 +197,11 @@ int min_value(STATE *state, int depth) {
 	/* If depth limit reached stop searching and pass up value of this state */
 	if (depth == depth_limit) {
 		done = false;
-		return -(mmsearch_utility(state));
+		return mmsearch_utility(state);
 	}
 	
 	/* If terminal state stop searching and pass up value of this state */
-	if (mmsearch_terminal_test(state)) return -(mmsearch_utility(state));
+	if (mmsearch_terminal_test(state)) return mmsearch_utility(state);
 	
 	/* Expand current state */
 	successors = mmsearch_successors(state);

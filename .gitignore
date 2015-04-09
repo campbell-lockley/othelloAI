@@ -2,3 +2,7 @@
 *.txt
 othelloAI
 turns
+*.java
+*.class
+*.odt
+*.pdf

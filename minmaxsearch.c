@@ -25,8 +25,8 @@
 /* ********** *
  * Prototypes *
  * ********** */
-extern int max_value(STATE *state, int depth);
-extern int min_value(STATE *state, int depth);
+extern int max_value(STATE *state, int alpha, int beta, int depth);
+extern int min_value(STATE *state, int alpha, int beta, int depth);
  
 /* ******* *
  * Globals *
@@ -87,7 +87,7 @@ void minmaxsearch_init(int time, Filo *(*actions)(STATE *state), STATE *(*result
 ACTION *minmax_decision(STATE *state) {
 	Filo *actions, *node;
 	ACTION *a, *best = NULL, *curr_best = NULL;
-	int min, max = INT_MIN;							/* -INF for int			      */
+	int v, alpha, beta, min;
 	
 	/* Need to have problem domain functions before starting a search */
 	if (!ready) {
@@ -110,18 +110,23 @@ ACTION *minmax_decision(STATE *state) {
 		node = actions;							/* Restart search at root	      */
 		done = true;
 		curr_best = NULL;
-		max = INT_MIN;
+		v = INT_MIN;							/* -INF for int			      */
+		alpha = INT_MIN;
+		beta = INT_MAX;
 		
 		while (!filo_isEmpty(&node)) {
 			a = node->value;
-		
-			min = min_value(mmsearch_result(a, state), 1);		/* Start recursive minmax search      */
+			
+			/* Start recursive minmax search */
+			min = min_value(mmsearch_result(a, state), alpha, beta, 1);
 			if (timeout) break;					/* Check for timeout		      */
 		
-			if (min > max) {
-				max = min;
+			if (min > v) {
+				v = min;
 				curr_best = a;
 			}
+			
+			alpha = MAX(alpha, v);
 			
 			node = node->next;
 		}
@@ -129,7 +134,7 @@ ACTION *minmax_decision(STATE *state) {
 		if (timeout) break;						/* Check for timeout		      */
 		
 		best = curr_best;						/* Update best			      */
-		mmsearch_set_estimate(best, max);				/* Record new minmax estimate	      */
+		mmsearch_set_estimate(best, v);					/* Record new minmax estimate	      */
 	}
 	
 	if (timeout) depth_limit--;
@@ -140,7 +145,7 @@ ACTION *minmax_decision(STATE *state) {
 /*
  * Evaluates a max step in the search. Passes up the max of its children.
  */
-int max_value(STATE *state, int depth) {
+int max_value(STATE *state, int alpha, int beta, int depth) {
 	Filo *successors;
 	STATE *successor;
 	int min, v = INT_MIN;						/* -INF for int				      */
@@ -169,9 +174,11 @@ int max_value(STATE *state, int depth) {
 	/* Find max of children */
 	while (!filo_isEmpty(&successors)) {
 		successor = filo_pop(&successors);
-		min = min_value(successor, depth + 1);			/* Perform next min step		      */
+		min = min_value(successor, alpha, beta, depth + 1);	/* Perform next min step		      */
 		v = MAX(v, min);
+		alpha = MAX(alpha, v);
 		mmsearch_free_state(successor);
+		if (v >= beta) return v;
 	}
 	
 	return v;							/* Return max of children		      */
@@ -180,7 +187,7 @@ int max_value(STATE *state, int depth) {
 /*
  * Evaluates a min step in the search. Passes up the min of its children.
  */
-int min_value(STATE *state, int depth) {
+int min_value(STATE *state, int alpha, int beta, int depth) {
 	Filo *successors;
 	STATE *successor;
 	int max, v = INT_MAX;						/* +INF for int				      */
@@ -209,9 +216,11 @@ int min_value(STATE *state, int depth) {
 	/* Find min of children */
 	while (!filo_isEmpty(&successors)) {
 		successor = filo_pop(&successors);
-		max = max_value(successor, depth + 1);			/* Perform next min step		      */
+		max = max_value(successor, alpha, beta, depth + 1);	/* Perform next min step		      */
 		v = MIN(v, max);
+		beta = MIN(beta, v);
 		mmsearch_free_state(successor);
+		if (v <= alpha) return v;
 	}
 	
 	return v;							/* Return min of children		      */

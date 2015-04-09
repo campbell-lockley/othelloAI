@@ -1,7 +1,40 @@
 /* ****************************************************************************************************************** *
  * Name:	minmaxsearch.c
- * Description:	A generic min-max algorithm which finds the next best move for a given game when provided a successor 
- * 		function, a terminal test function and a utility function.
+ * Description:	A generic min-max algorithm which finds the next best move for a given game when provided with the 
+ * 		required problem domain specific functions. These functions are:
+ * 			actions(STATE)
+ * 				Returns a Filo<ACTION> containing the actions which are possible to perform on this 
+ * 				state.
+ * 			result(ACTION, STATE)
+ * 				Applies the action to the state, returning the resulting state.
+ * 			utility(STATE)
+ * 				Calculates a heuristic value for this state.
+ * 			terminal_test(STATE)
+ * 				Returns true if this state is a terminal state, false otherwise.
+ * 			successors(STATE)
+ * 				Returns a Filo<STATE> containing the the children of this state, being the states 
+ * 				resulting from every possible action being performed on this state.
+ * 
+ * 		And some non-algorithm utility functions:
+ * 			set_estimate(ACTION, estimate)
+ * 				Updates the estimate value associated with this action.
+ * 			free_action(ACTION)
+ * 				Safely frees an action.
+ * 			free_state(STATE)
+ * 				Safely frees a state.
+ * 
+ * 		There must also be an external definition of a STATE and an ACTION which is used by the suppied problem
+ * 		domain specific functions.
+ * 
+ * 		A search is started by calling minmax_decision() with the initial state of this search.
+ * 		Important! minmaxsearch_init() must be run before minmax_decision() with valid arguments.
+ * 
+ * 		minmaxsearch will find an optimal solution iff it completes its search within the time specified to 
+ * 		minmaxsearch_init(). Otherwise it will return the best solution found so far.
+ * 
+ * 		The efficiency of this search depends upon the performance of the problem domain functions, however 
+ * 		this implementation of a minmax search is tuned with alpha-beta pruning to optimise performance.
+ * 			
  * Author:	Campbell Lockley		studentID: 1178618
  * Date:	31/03/15
  * ****************************************************************************************************************** */
@@ -10,7 +43,6 @@
  * Includes *
  * ******** */
 #include <stdlib.h>
-#include <stdio.h>
 #include <limits.h>
 #include <time.h>
 
@@ -33,10 +65,10 @@ extern int min_value(STATE *state, int alpha, int beta, int depth);
  * ******* */
 bool   ready = false;							/* True if minmaxsearch_init run correctly    */
 int    depth_limit = 0;							/* Depth reached by last minmax_decision()    */
-bool   done;
+bool   done;								/* Optimal solution found before time limit   */
 double time_limit;							/* Time constraint on minmaxsearch	      */
-time_t start_time;
-bool   timeout;
+time_t start_time;							/* Time search started			      */
+bool   timeout;								/* Search timed out			      */
 
 /* These are the problem domain functions required by minmaxsearch */
 Filo  *(*mmsearch_actions)       (STATE *state)            = NULL;	/* Finds possible actions for a state	      */
@@ -44,7 +76,7 @@ STATE *(*mmsearch_result)        (ACTION *a, STATE *state) = NULL;	/* Returns re
 int    (*mmsearch_utility)       (STATE *state)            = NULL;	/* Returns utility value for a state	      */
 bool   (*mmsearch_terminal_test) (STATE *state)            = NULL;	/* Tests for a terminal state		      */
 Filo  *(*mmsearch_successors)    (STATE *state)            = NULL;	/* Expands a state			      */
-void   (*mmsearch_set_estimate)   (ACTION *a, int estimate) = NULL;	/* Updates minmax estimate of an action	      */
+void   (*mmsearch_set_estimate)  (ACTION *a, int estimate) = NULL;	/* Updates minmax estimate of an action	      */
 void   (*mmsearch_free_action)   (ACTION *a)               = NULL;	/* Safely frees an action		      */
 void   (*mmsearch_free_state)    (STATE *a)                = NULL;	/* Safely frees a state			      */
 
@@ -63,7 +95,6 @@ void minmaxsearch_init(int time, Filo *(*actions)(STATE *state), STATE *(*result
 	if (time <= 0 || !actions || !result || !utility || !terminal_test || !successors || !set_estimate 
 	    || !free_action || !free_state) {
 		ready = false;
-		printf("%s\n", "minmaxsearch passed incompatable arguments");
 		return;
 	}
 	
@@ -90,10 +121,7 @@ ACTION *minmax_decision(STATE *state) {
 	int v, alpha, beta, min;
 	
 	/* Need to have problem domain functions before starting a search */
-	if (!ready) {
-		printf("%s\n", "minmaxsearch is not ready");
-		return NULL;
-	}
+	if (!ready) return NULL;
 	
 	/* Start the clock */
 	start_time = time(&start_time);

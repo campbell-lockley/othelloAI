@@ -1,7 +1,8 @@
 /* ****************************************************************************************************************** *
  * Name:	othelloAI.c
- * Description:	A simple move generator that uses an AI algorithm to choose an intelligent next move for the game 
- * 		othello within a specified time limit.
+ * Description:	A simple move generator that uses a minmax game tree algorithm to choose an intelligent next move for 
+ * 		an AI othello player. To start a search run compute_move(). The search will run untill the optimal 
+ * 		solution is found or untill the time limit expires. The best move found so far will then be returned.
  * Author:	Campbell Lockley		studentID: 1178618
  * Date:	31/03/15
  * ****************************************************************************************************************** */
@@ -61,7 +62,7 @@ PRIVATE char axis_convert[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
  * Functions *
  * ********* */
 /*
- * Reads a board state from stdin and computes a next move.
+ * Reads a board state from stdin and computes a next move, printing move and details to stdout.
  */
 int main(int argc, char *argv[]) {
 	State initial_state;						/* Initial state read from stdin	      */
@@ -70,36 +71,8 @@ int main(int argc, char *argv[]) {
 	
 	/* Get initial state from stdin */
 	if(!scan_state(&initial_state, &time)) return 1;
-	/*print_state(&initial_state);
-	printf("%d\n", time);*/
-	
-	/* Test FILO */
-	/*char s1[] = "first";
-	char s2[] = "second";
-	char s3[] = "third";
-	Filo *filo;
-	filo_init(&filo);
-	filo_push(&filo, s1);
-	filo_push(&filo, s2);
-	filo_push(&filo, s3);
-	printf("%d\n", filo_size(&filo));
-	printf("filo is %sempty\n", (filo_isEmpty(&filo) ? "" : "not "));*/
-	
-	/* Test Problem Domain Functions */
-	/*printf("utility = %d\n", utility(&initial_state));
-	printf("terminal_test = %s\n", (terminal_test(&initial_state) ? "yes" : "no"));
-	Filo *slist;
-	State *state;
-	slist = successors(&initial_state);
-	while (!filo_isEmpty(&slist)) {
-		state = (State *)filo_pop(&slist);
-		print_state(state);
-	}*/
-	
-	/* Misc. Testing */
 	
 	/* Compute next move */
-	//a = compute_move(&initial_state, time);
 	a = compute_move(&initial_state, time);
 	if (a != NULL) {
 		printf("move %c %d nodes %d depth %d minmax %d\n", 

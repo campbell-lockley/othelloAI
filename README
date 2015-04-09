@@ -1,0 +1,5 @@
+Compile with command:
+$ make
+
+Run with command:
+$ ./othelloAI < `yourfilename`
